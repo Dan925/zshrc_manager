@@ -14,6 +14,9 @@ var rootCmd = &cobra.Command{
 	Use:   "zshrc",
 	Short: "Manage your .zshrc file safely",
 	Long:  "A CLI tool for listing, searching, and editing your .zshrc with automatic backups.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
 
 func Execute() {
