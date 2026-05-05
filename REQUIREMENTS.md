@@ -1,30 +1,31 @@
-# Project Discovery: `zshrc-manager` — A Rust CLI Learning Project
+# Project Discovery: `zshrc-manager` — A Go CLI Learning Project
 
 ---
 
 ## Executive Summary
 
-This project is a Rust CLI tool for managing `.zshrc` files — organizing aliases, managing named sections, searching functions, and backing up versions. The primary goal is **learning Rust** through a real, personally useful tool. The `.zshrc` management domain is an excellent choice: it involves file I/O, string parsing, error handling, user interaction, and structured data — all without requiring a network stack or async complexity in the MVP, keeping the learning surface focused.
+This project is a Go CLI tool for managing `.zshrc` files — organizing aliases, managing named sections, searching functions, and backing up versions. The primary goal is **learning Go** through a real, personally useful tool. The `.zshrc` management domain is an excellent choice: it involves file I/O, string parsing, error handling, user interaction, and structured data — all without requiring concurrency or network complexity in the MVP, keeping the learning surface focused.
 
 ---
 
 ## User Clarifications (Answered)
 
-- **Rust experience:** Brand new (no prior experience)
-- **Parser strategy:** Lossy parsing acceptable (reformatting is OK)
+- **Go experience:** Brand new (no prior experience)
+- **Parser strategy:** Regex-based line-by-line parsing (simpler for a beginner, refactor later if needed)
 - **MVP scope:** Include write operations from day one (not read-only first)
+- **CLI framework:** Cobra + Go stdlib (industry standard, used by kubectl, helm, gh, docker)
 
 These answers significantly simplify the implementation:
-1. Start with regex-based parsing instead of state machines (simpler for a beginner, refactor later if needed)
+1. Use regex-based parsing instead of a state machine (simpler for a beginner)
 2. Don't worry about preserving exact formatting
-3. Build backup system first (critical safety net for writes)
+3. Build backup system before write commands (critical safety net)
 
 ---
 
 ## User Personas
 
 **Primary: You (the developer/user)**
-A developer learning Rust who maintains a growing `.zshrc` with aliases, functions, exports, and path modifications. You want to find things faster, stop accidentally breaking the file, and understand what's in it at a glance.
+A developer learning Go who maintains a growing `.zshrc` with aliases, functions, exports, and path modifications. You want to find things faster, stop accidentally breaking the file, and understand what's in it at a glance.
 
 ---
 
@@ -54,7 +55,7 @@ As a user, I want to search for a keyword across my `.zshrc` so that I can find 
 *Acceptance Criteria:*
 - `zshrc search docker` returns all lines containing "docker" with line numbers
 - Case-insensitive by default, with `--case-sensitive` flag
-- Highlight matches in output (ANSI colors)
+- Highlight matches in output
 
 ---
 
@@ -65,14 +66,14 @@ As a user, I want every write operation to create a timestamped backup so that I
 
 *Acceptance Criteria:*
 - Backups stored in `~/.zshrc.bak/YYYY-MM-DD_HH-MM-SS.zshrc`
-- Backup created atomically before any modification
+- Backup created before any modification
 - Directory created automatically if missing
 
 **US-05: List backups**
 As a user, I want to see all available backups with timestamps and file sizes.
 
 *Acceptance Criteria:*
-- `zshrc backup list` shows all backups sorted by timestamp
+- `zshrc backup list` shows all backups sorted by timestamp (newest first)
 - Displays file size for each backup
 - Shows timestamp in human-readable format
 
@@ -103,158 +104,146 @@ As a user, I want to remove an alias by name.
 *Acceptance Criteria:*
 - `zshrc remove alias gs` finds and removes the line
 - Shows diff before confirming
-- Does not remove if alias name appears in function body (with warning)
-
-**US-09: Add function**
-As a user, I want to add a custom function to my `.zshrc`.
-
-*Acceptance Criteria:*
-- `zshrc add function myfunction 'echo hello'` (or multiline with stdin)
-- Handles both single-line and multi-line functions
 - Creates backup before writing
 
 ---
 
 ### Epic 4: Validation & Safety
 
-**US-10: Validate syntax**
-As a user, I want the tool to check my `.zshrc` for syntax errors before and after edits.
+**US-09: Validate syntax**
+As a user, I want the tool to check my `.zshrc` for syntax errors.
 
 *Acceptance Criteria:*
 - `zshrc validate` runs `zsh -n ~/.zshrc`
 - Shows clear pass/fail status
-- If post-edit validation fails, offer automatic rollback to backup
 
 ---
 
-## Technical Decisions (Adjusted for Beginner + Lossy Parsing)
+## Technical Decisions
 
-### 1. CLI Framework: clap builder API
+### 1. CLI Framework: Cobra
 
-**Why:** You need to understand what's happening. The builder API is explicit and teachable. Derive macros come later once you see the patterns.
+**Why:** Industry standard for Go CLIs — used by kubectl, helm, gh, and docker. Learning it transfers directly to real-world Go projects.
 
 **What you'll learn:**
-- How Rust's type system represents command-line structures
-- Builder pattern in Rust
-- How argument parsing works under the hood
+- Cobra's command/subcommand structure
+- Persistent flags (available to all subcommands)
+- `RunE` for commands that return errors
 
 ---
 
-### 2. Error Handling: `anyhow` + simple string errors
+### 2. Error Handling: `fmt.Errorf` + `errors.Is`
 
-**Why:** As a beginner, `anyhow::Context` keeps errors simple while still teaching good practice. `thiserror` can come in version 2.
+**Why:** Go's stdlib error handling is explicit and idiomatic. No external libraries needed.
 
 **What you'll learn:**
-- How to add context to errors
-- The `?` operator and error propagation
-- When to panic vs. return errors
+- The `if err != nil` pattern
+- Wrapping errors with `fmt.Errorf("context: %w", err)`
+- Checking error types with `errors.Is`
+- When to return errors vs. exit with `os.Exit`
 
 ---
 
-### 3. File Parsing: Regex + line-by-line
+### 3. File Parsing: `regexp` + `strings.Split`
 
-**Why:** Simpler than a state machine. You can refactor to a proper parser once you understand the domain.
+**Why:** Go's built-in `regexp` package is sufficient for alias and function detection. No external dependencies.
 
 **What you'll learn:**
-- Rust regex syntax and the `regex` crate
-- String manipulation and pattern matching
-- Iterator patterns (`.lines()`, `.filter()`, `.map()`)
-
-**Future refactor:** Once this works, replace regex parser with a real parser to handle edge cases.
+- Go's `regexp` package
+- `strings.Split` for line-by-line processing
+- Struct types and slice operations
+- Brace-counting for multi-line function detection
 
 ---
 
-### 4. Backup System: Simple file copy with timestamps
+### 4. Backup System: `os`, `io`, `time` stdlib
 
-**Why:** Uses only `std::fs` and `chrono`. No external complexity.
+**Why:** Everything needed is in Go's standard library.
 
 **What you'll learn:**
-- File I/O in Rust (`std::fs`)
-- Path manipulation (`std::path`)
-- Creating directories atomically
-- Timestamps and formatting (chrono)
+- File I/O (`os.ReadFile`, `os.WriteFile`, `io.Copy`)
+- Path manipulation (`path/filepath`)
+- Timestamps (`time.Now().Format(layout)`)
+- Creating directories (`os.MkdirAll`)
 
 ---
 
-### 5. Configuration: Not in MVP
+### 5. Global Flags: `--file` and `--dry-run`
 
-**Why:** Keep scope tight. Start with hardcoded `~/.zshrc` path and `# ---` section pattern.
+**Why:** Both flags apply to every command. Cobra's `PersistentFlags()` on the root command makes them available everywhere.
 
-**When to add:** Once you can add/remove/search reliably.
+- `--file`: override the default `~/.zshrc` path
+- `--dry-run`: show what would happen without making any changes
 
 ---
 
-## Recommended Crate List (MVP Only)
+### 6. Configuration: Not in MVP
 
-```toml
-[dependencies]
-clap = "4"                    # CLI argument parsing
-anyhow = "1"                  # Error handling with context
-regex = "1"                   # Pattern matching for parsing
-chrono = "0.4"                # Timestamps for backups
-colored = "2"                 # Colored terminal output (optional, nice UX)
+**Why:** Keep scope tight. Start with hardcoded `~/.zshrc` path.
 
-[dev-dependencies]
-tempfile = "3"                # Temporary files for testing
+---
+
+## Recommended Dependencies (MVP Only)
+
+```
+github.com/spf13/cobra v1.8   # CLI framework
+
+# Everything else is Go stdlib:
+# os, io, bufio, regexp, strings, fmt, path/filepath, time, errors
 ```
 
 Later additions (v2):
-- `thiserror` — typed domain errors
-- `serde` + `toml` — config files
-- `comfy-table` — table output
-- `similar` — better diffs
-- `assert_cmd` — CLI integration tests
+- `github.com/fatih/color` — colored terminal output
+- `github.com/olekukonko/tablewriter` — table output
+- `github.com/sergi/go-diff` — better diffs
 
 ---
 
 ## Implementation Roadmap
 
-### Phase 1: Setup & Parsing (Week 1)
-1. `cargo new zshrc-manager`
-2. Set up clap with basic `--help` and subcommands: `list`, `search`, `add`, `remove`, `backup`
-3. Implement simple regex parser to extract aliases and functions
-4. Implement `list aliases` and `list functions` commands
-5. Write unit tests for parser
+### Phase 1: Setup & Parsing (Day 1 – Week 1)
+1. `go mod init github.com/Dan925/zshrc-manager`
+2. Add Cobra, set up `cmd/root.go` with `--file` and `--dry-run` flags
+3. Implement `internal/parser` with regex-based alias and function extraction
+4. Write round-trip test (parse → reconstruct → assert byte-for-byte equality)
+5. Implement `zshrc list aliases` and `zshrc list functions`
 
 **Milestone:** Can run `zshrc list aliases` and see your real aliases printed.
 
 ---
 
-### Phase 2: Read Operations (Week 2)
-1. Implement `search` command with case-insensitive matching
-2. Add colored output for better UX
-3. Add unit tests for search
-4. Test against your actual `.zshrc`
+### Phase 2: Read Operations (Week 1–2)
+1. Implement `zshrc search` with case-insensitive matching
+2. Add `--case-sensitive` flag and match highlighting
+3. Write unit tests for parser
 
 **Milestone:** Can find any alias or function by keyword.
 
 ---
 
-### Phase 3: Backup System (Week 3) — Implement BEFORE any writes
-1. Create backup infrastructure: `~/.zshrc.bak/` directory
-2. Implement `backup list` and `backup restore` commands
-3. Add atomic backup creation (create temp file, rename atomically)
-4. Test backup/restore with temp files
+### Phase 3: Backup System (Week 2) — Implement BEFORE any writes
+1. Implement `internal/backup` with `Create`, `List`, `Restore`
+2. Implement `zshrc backup list` and `zshrc backup restore`
+3. Write tests using `t.TempDir()`
 
 **Milestone:** Can safely recover from any mistake.
 
 ---
 
-### Phase 4: Write Operations (Week 4)
-1. Implement `add alias` with pre-write diff and confirmation
-2. Implement `remove alias` with safety checks
-3. Add post-write validation (`zsh -n`)
-4. Test with temporary `.zshrc` copies
+### Phase 4: Write Operations (Week 3)
+1. Implement `zshrc add alias` with pre-write diff and confirmation
+2. Implement `zshrc remove alias` with safety checks
+3. Wire `--dry-run` into all write commands
+4. Implement `zshrc validate` (`zsh -n`)
 
 **Milestone:** Can modify your `.zshrc` safely with automatic backups.
 
 ---
 
-### Phase 5: Polish & Testing (Week 5)
-1. Write comprehensive integration tests
-2. Add error messages for edge cases
-3. Test with your real `.zshrc`
-4. Document commands and examples
+### Phase 5: Polish & Testing (Week 4)
+1. Integration tests for all write commands using temp files
+2. Improve error messages for common failure cases
+3. Test against your real `.zshrc`
 
 **Milestone:** Production-ready tool for personal use.
 
@@ -264,13 +253,14 @@ Later additions (v2):
 
 By the end of this project, you'll understand:
 
-1. **File I/O & Paths** — reading, writing, creating directories
-2. **String Processing** — regex, pattern matching, working with text
-3. **CLI Design** — parsing arguments, user confirmation, exit codes
-4. **Error Handling** — context, propagation, recovery
-5. **Testing** — unit tests, integration tests with temp files
-6. **Iterators** — filtering, mapping, collecting results
-7. **Type System** — using Rust's type system to make bad states unrepresentable
+1. **Go package system** — `internal/` visibility, package organization
+2. **Structs and methods** — pointer receivers, constructors by convention
+3. **Error handling** — `if err != nil`, `%w` wrapping, `errors.Is`
+4. **File I/O** — `os.ReadFile`, `os.WriteFile`, `path/filepath`
+5. **Regex in Go** — `regexp.MustCompile`, `FindStringSubmatch`
+6. **Testing** — `testing.T`, `t.TempDir()`, table-driven tests
+7. **CLI design** — Cobra commands, persistent flags, `RunE`
+8. **Slices and maps** — Go's core data structures
 
 ---
 
@@ -285,19 +275,21 @@ By the end of this project, you'll understand:
 - Add new alias (with diff & confirmation)
 - Remove alias (with diff & confirmation)
 - Validate syntax with `zsh -n`
+- `--dry-run` global flag
+- `--file` global flag
 
 ### Should Have
 - Add new function (multi-line support)
-- Case-sensitive search flag
-- Colored output
-- Helpful error messages
+- `--case-sensitive` search flag
+- `--verbose` flag on `list functions`
+- Colored output (`fatih/color`)
 - Unit + integration tests
 
 ### Could Have
-- Move alias to section
+- `zshrc outline` (section table of contents)
+- Shell completions (`zshrc completion zsh`)
 - `zshrc doctor` (find duplicates, unused functions)
 - Config file for custom paths
-- Shell completions
 
 ### Won't Have (v1)
 - Remote backup sync
@@ -309,10 +301,10 @@ By the end of this project, you'll understand:
 
 ## Getting Started
 
-1. Create the project: `cargo new zshrc-manager && cd zshrc-manager`
-2. Add dependencies to `Cargo.toml`
-3. Start with Phase 1: Parse your `.zshrc` and print aliases
-4. Commit early and often
-5. Write tests as you go, don't leave them for the end
+1. Initialize: `go mod init github.com/Dan925/zshrc-manager`
+2. Add Cobra: `go get github.com/spf13/cobra@v1.8.0`
+3. Start with Phase 1: build the skeleton, then parse aliases
+4. Write the round-trip test before any write logic
+5. Commit early and often — one feature per commit
 
 This is a real, useful tool you'll actually use. That's what makes it a great learning project.
