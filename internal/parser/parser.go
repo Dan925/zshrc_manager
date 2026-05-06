@@ -3,13 +3,14 @@ package parser
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 )
 
 type Alias struct {
 	Name  string
 	Value string
-	Line  int // 1-indexed
+	Line  int
 }
 
 type Function struct {
@@ -29,12 +30,12 @@ type Parser struct {
 	filePath string
 }
 
+var aliasRe = regexp.MustCompile(`^alias\s+([^=\s]+)=(.+)$`)
+
 func NewParser(path string) *Parser {
 	return &Parser{filePath: path}
 }
 
-// Parse reads the file into a ZshrcFile. RawLines preserves every line
-// so the file can be reconstructed exactly with WriteTo.
 func (p *Parser) Parse() (*ZshrcFile, error) {
 	content, err := os.ReadFile(p.filePath)
 	if err != nil {
@@ -42,10 +43,21 @@ func (p *Parser) Parse() (*ZshrcFile, error) {
 	}
 	zf := &ZshrcFile{}
 	zf.RawLines = strings.Split(string(content), "\n")
+
+	for i, line := range zf.RawLines {
+		lineNum := i + 1
+		if m := aliasRe.FindStringSubmatch(line); m != nil {
+			zf.Aliases = append(zf.Aliases, Alias{
+				Name:  strings.TrimSpace(m[1]),
+				Value: strings.Trim(strings.TrimSpace(m[2]), `'"`),
+				Line:  lineNum,
+			})
+		}
+	}
+
 	return zf, nil
 }
 
-// WriteTo reconstructs the file from RawLines and writes it to path.
 func (zf *ZshrcFile) WriteTo(path string) error {
 	content := strings.Join(zf.RawLines, "\n")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {

@@ -41,3 +41,33 @@ func TestRoundTrip(t *testing.T) {
 		t.Errorf("round-trip mismatch\ngot:\n%s\nwant:\n%s", roundTripped, original)
 	}
 }
+
+func TestParseAliases(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "alias gs='git status'\nalias gp=\"git push\"\nalias ll=ls -la\n# not an alias\nexport FOO=bar\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf.Aliases) != 3 {
+		t.Fatalf("expected 3 aliases, got %d", len(zf.Aliases))
+	}
+
+	cases := []struct{ name, value string }{
+		{"gs", "git status"},
+		{"gp", "git push"},
+		{"ll", "ls -la"},
+	}
+	for i, c := range cases {
+		if zf.Aliases[i].Name != c.name {
+			t.Errorf("Aliases[%d].Name = %q, want %q", i, zf.Aliases[i].Name, c.name)
+		}
+		if zf.Aliases[i].Value != c.value {
+			t.Errorf("Aliases[%d].Value = %q, want %q", i, zf.Aliases[i].Value, c.value)
+		}
+	}
+}
