@@ -8,15 +8,36 @@ Built as a Go learning project.
 
 ## Install
 
+### Option 1: Go install (requires Go 1.21+)
+
+```bash
+go install github.com/Dan925/zshrc_manager@latest
+```
+
+The binary is placed in `~/go/bin/`. Make sure that's on your PATH:
+
+```bash
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Option 2: Download a release binary (no Go required)
+
+1. Go to [Releases](https://github.com/Dan925/zshrc_manager/releases/latest)
+2. Download the archive for your OS and architecture (e.g. `zshrc-manager_linux_amd64.tar.gz`)
+3. Extract and move to your PATH:
+
+```bash
+tar -xzf zshrc-manager_linux_amd64.tar.gz
+mv zshrc ~/.local/bin/
+```
+
+### Option 3: Build from source
+
 ```bash
 git clone https://github.com/Dan925/zshrc_manager.git
 cd zshrc_manager
 go build -o zshrc .
-```
-
-Move the binary somewhere on your PATH:
-
-```bash
 mv zshrc ~/.local/bin/
 ```
 

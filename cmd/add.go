@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	bk "github.com/Dan925/zshrc-manager/internal/backup"
-	"github.com/Dan925/zshrc-manager/internal/parser"
+	bk "github.com/Dan925/zshrc_manager/internal/backup"
+	"github.com/Dan925/zshrc_manager/internal/parser"
 	"github.com/spf13/cobra"
 )
 

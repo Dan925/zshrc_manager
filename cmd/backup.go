@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/Dan925/zshrc-manager/internal/backup"
+	"github.com/Dan925/zshrc_manager/internal/backup"
 	"github.com/spf13/cobra"
 )
 

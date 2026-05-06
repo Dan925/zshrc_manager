@@ -1,4 +1,4 @@
-module github.com/Dan925/zshrc-manager
+module github.com/Dan925/zshrc_manager
 
 go 1.26.2
 
