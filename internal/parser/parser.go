@@ -31,6 +31,12 @@ type Parser struct {
 }
 
 var aliasRe = regexp.MustCompile(`^alias\s+([^=\s]+)=(.+)$`)
+var funcRe   = regexp.MustCompile(`^(?:function\s+)?([a-zA-Z_][a-zA-Z0-9_:-]*)\s*(?:\(\s*\))?\s*\{`)
+
+var shellKeywords = map[string]bool{
+	"if": true, "while": true, "for": true, "case": true,
+	"do": true, "then": true, "else": true, "elif": true,
+}
 
 func NewParser(path string) *Parser {
 	return &Parser{filePath: path}
@@ -44,14 +50,47 @@ func (p *Parser) Parse() (*ZshrcFile, error) {
 	zf := &ZshrcFile{}
 	zf.RawLines = strings.Split(string(content), "\n")
 
+	var currentFunc *Function
+	braceDepth := 0
+
 	for i, line := range zf.RawLines {
 		lineNum := i + 1
+
+		if currentFunc != nil {
+			currentFunc.Body += line + "\n"
+			braceDepth += strings.Count(line, "{") - strings.Count(line, "}")
+			if braceDepth <= 0 {
+				currentFunc.EndLine = lineNum
+				zf.Functions = append(zf.Functions, *currentFunc)
+				currentFunc = nil
+				braceDepth = 0
+			}
+			continue
+		}
+
 		if m := aliasRe.FindStringSubmatch(line); m != nil {
 			zf.Aliases = append(zf.Aliases, Alias{
 				Name:  strings.TrimSpace(m[1]),
 				Value: strings.Trim(strings.TrimSpace(m[2]), `'"`),
 				Line:  lineNum,
 			})
+			continue
+		}
+
+		if m := funcRe.FindStringSubmatch(line); m != nil {
+			name := m[1]
+			if shellKeywords[name] {
+				continue
+			}
+			currentFunc = &Function{
+				Name:      name,
+				StartLine: lineNum,
+				Body:      line + "\n",
+			}
+			braceDepth = strings.Count(line, "{") - strings.Count(line, "}")
+			if braceDepth <= 0 {
+				braceDepth = 1
+			}
 		}
 	}
 

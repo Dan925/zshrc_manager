@@ -42,6 +42,28 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
+func TestParseFunctions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "function greet() {\n\techo \"Hello, $1\"\n}\n\nmkcd() {\n\tmkdir -p \"$1\" && cd \"$1\"\n}\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf.Functions) != 2 {
+		t.Fatalf("expected 2 functions, got %d: %+v", len(zf.Functions), zf.Functions)
+	}
+	if zf.Functions[0].Name != "greet" {
+		t.Errorf("Functions[0].Name = %q, want %q", zf.Functions[0].Name, "greet")
+	}
+	if zf.Functions[1].Name != "mkcd" {
+		t.Errorf("Functions[1].Name = %q, want %q", zf.Functions[1].Name, "mkcd")
+	}
+}
+
 func TestParseAliases(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, ".zshrc")
