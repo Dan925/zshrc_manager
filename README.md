@@ -1,5 +1,7 @@
 # zshrc-manager
 
+![demo](demo.gif)
+
 A Go CLI tool for managing your `.zshrc` file — list aliases, search, add, remove, and back up safely.
 
 Built as a Go learning project.
