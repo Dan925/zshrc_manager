@@ -113,6 +113,30 @@ func (p *Parser) Parse() (*ZshrcFile, error) {
 	return zf, nil
 }
 
+func (zf *ZshrcFile) AddEnvVar(name, value string) {
+	newRawLine := fmt.Sprintf("export %s=%s", name, value)
+	for _, v:= range zf.EnvVars {
+		if v.Name == name {
+			zf.RawLines[v.Line-1] = newRawLine //overwrite line if env variable exists
+			return
+		}
+	}
+
+	zf.RawLines = append(zf.RawLines,newRawLine)
+}
+
+func (zf *ZshrcFile) RemoveEnvVar(name string) error {
+	for _, v:= range zf.EnvVars {
+		if v.Name == name {
+			zf.RawLines = append(zf.RawLines[:v.Line-1],zf.RawLines[v.Line:]...)
+			return nil
+		}
+
+	}
+	return fmt.Errorf("env var %q not found", name)
+
+}
+
 func (zf *ZshrcFile) WriteTo(path string) error {
 	content := strings.Join(zf.RawLines, "\n")
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {

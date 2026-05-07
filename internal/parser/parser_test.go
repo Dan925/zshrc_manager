@@ -124,3 +124,108 @@ func TestParseEnvVars(t *testing.T) {
 		}
 	}
 }
+
+func TestAddNewEnvVar(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "alias gs='git status'\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	zf.AddEnvVar("EDITOR", "nvim")
+
+	outPath := filepath.Join(dir, ".zshrc.out")
+	zf.WriteTo(outPath)
+
+	zf2, err := NewParser(outPath).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf2.EnvVars) != 1 {
+		t.Fatalf("expected 1 env var, got %d", len(zf2.EnvVars))
+	}
+	if zf2.EnvVars[0].Name != "EDITOR" || zf2.EnvVars[0].Value != "nvim" {
+		t.Errorf("unexpected env var: %+v", zf2.EnvVars[0])
+	}
+}
+
+func TestAddEnvVarOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "export EDITOR=vim\nalias gs='git status'\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	zf.AddEnvVar("EDITOR", "nvim")
+
+	outPath := filepath.Join(dir, ".zshrc.out")
+	zf.WriteTo(outPath)
+
+	zf2, err := NewParser(outPath).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf2.EnvVars) != 1 {
+		t.Fatalf("expected 1 env var after overwrite, got %d", len(zf2.EnvVars))
+	}
+	if zf2.EnvVars[0].Value != "nvim" {
+		t.Errorf("expected value %q, got %q", "nvim", zf2.EnvVars[0].Value)
+	}
+}
+
+func TestRemoveEnvVar(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "export EDITOR=vim\nalias gs='git status'\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := zf.RemoveEnvVar("EDITOR"); err != nil {
+		t.Fatalf("RemoveEnvVar() error: %v", err)
+	}
+
+	outPath := filepath.Join(dir, ".zshrc.out")
+	zf.WriteTo(outPath)
+
+	zf2, err := NewParser(outPath).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf2.EnvVars) != 0 {
+		t.Fatalf("expected 0 env vars after remove, got %d", len(zf2.EnvVars))
+	}
+	if len(zf2.Aliases) != 1 {
+		t.Fatalf("expected alias to survive, got %d aliases", len(zf2.Aliases))
+	}
+}
+
+func TestRemoveEnvVarMissing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	os.WriteFile(path, []byte("alias gs='git status'\n"), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = zf.RemoveEnvVar("NONEXISTENT")
+	if err == nil {
+		t.Fatal("expected error for missing env var, got nil")
+	}
+}
