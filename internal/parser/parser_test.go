@@ -93,3 +93,34 @@ func TestParseAliases(t *testing.T) {
 		}
 	}
 }
+
+func TestParseEnvVars(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "export FOO=bar\nexport EDITOR='nvim'\nexport GREETING=\"hello world\"\nexport PATH=\"go/bin:$PATH\"\n# not an export\nalias gs='git status'\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(zf.EnvVars) != 4 {
+		t.Fatalf("expected 4 env vars, got %d: %+v", len(zf.EnvVars), zf.EnvVars)
+	}
+
+	cases := []struct{ name, value string }{
+		{"FOO", "bar"},
+		{"EDITOR", "nvim"},
+		{"GREETING", "hello world"},
+		{"PATH","go/bin:$PATH"},
+	}
+	for i, c := range cases {
+		if zf.EnvVars[i].Name != c.name {
+			t.Errorf("EnvVars[%d].Name = %q, want %q", i, zf.EnvVars[i].Name, c.name)
+		}
+		if zf.EnvVars[i].Value != c.value {
+			t.Errorf("EnvVars[%d].Value = %q, want %q", i, zf.EnvVars[i].Value, c.value)
+		}
+	}
+}

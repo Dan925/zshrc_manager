@@ -6,6 +6,11 @@ import (
 	"regexp"
 	"strings"
 )
+type EnvVar struct {
+	Name string
+	Value string
+	Line  int
+}
 
 type Alias struct {
 	Name  string
@@ -23,6 +28,7 @@ type Function struct {
 type ZshrcFile struct {
 	Aliases   []Alias
 	Functions []Function
+	EnvVars   []EnvVar
 	RawLines  []string
 }
 
@@ -30,6 +36,7 @@ type Parser struct {
 	filePath string
 }
 
+var envRe = regexp.MustCompile(`^export\s+([^=\s]+)=(.+)$`)
 var aliasRe = regexp.MustCompile(`^alias\s+([^=\s]+)=(.+)$`)
 var funcRe   = regexp.MustCompile(`^(?:function\s+)?([a-zA-Z_][a-zA-Z0-9_:-]*)\s*(?:\(\s*\))?\s*\{`)
 
@@ -91,6 +98,15 @@ func (p *Parser) Parse() (*ZshrcFile, error) {
 			if braceDepth <= 0 {
 				braceDepth = 1
 			}
+		}
+		
+		if m:= envRe.FindStringSubmatch(line); m!= nil {
+			zf.EnvVars = append(zf.EnvVars, EnvVar{
+				Name: strings.TrimSpace(m[1]),
+				Value: strings.Trim(strings.TrimSpace(m[2]),`'"`),
+				Line: lineNum,
+			})
+			continue
 		}
 	}
 
