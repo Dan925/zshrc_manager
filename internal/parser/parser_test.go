@@ -136,7 +136,7 @@ func TestAddNewEnvVar(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	zf.AddEnvVar("EDITOR", "nvim")
+	zf.AddEnvVar("EDITOR", "nvim", false)
 
 	outPath := filepath.Join(dir, ".zshrc.out")
 	zf.WriteTo(outPath)
@@ -153,6 +153,27 @@ func TestAddNewEnvVar(t *testing.T) {
 		t.Errorf("unexpected env var: %+v", zf2.EnvVars[0])
 	}
 }
+func TestAddEnvVarOverwriteWithoutForce(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ".zshrc")
+	content := "export EDITOR=vim\nalias gs='git status'\n"
+	os.WriteFile(path, []byte(content), 0644)
+
+	zf, err := NewParser(path).Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = zf.AddEnvVar("EDITOR", "nvim", false)
+
+	if err ==  nil {
+		t.Fatalf("expected error after overwrite attempt without force true, got nil")
+	}
+
+	if zf.EnvVars[0].Value != "vim" {
+		t.Errorf("expected value %q, got %q", "vim", zf.EnvVars[0].Value)
+	}
+}
 
 func TestAddEnvVarOverwrite(t *testing.T) {
 	dir := t.TempDir()
@@ -165,7 +186,7 @@ func TestAddEnvVarOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	zf.AddEnvVar("EDITOR", "nvim")
+	zf.AddEnvVar("EDITOR", "nvim", true)
 
 	outPath := filepath.Join(dir, ".zshrc.out")
 	zf.WriteTo(outPath)

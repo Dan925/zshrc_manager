@@ -13,6 +13,7 @@ func confirm(prompt string) bool {
 }
 
 func showDiff(removed, added string) {
+	fmt.Println("Changes:")
 	for _, line := range strings.Split(removed, "\n") {
 		if line != "" {
 			fmt.Printf("- %s\n", line)
@@ -23,4 +24,5 @@ func showDiff(removed, added string) {
 			fmt.Printf("+ %s\n", line)
 		}
 	}
+	fmt.Println()
 }

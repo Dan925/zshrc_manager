@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.0 — 2026-05-06
+
+### Features
+
+- **`zshrc env list`** — list all `export KEY=value` entries in `NAME -> value` format
+- **`zshrc env add <KEY>=<value>`** — add or overwrite an env var with diff preview and confirmation; `--force` to overwrite existing
+- **`zshrc env remove <KEY>`** — remove an env var by name with diff preview and confirmation
+
+---
+
 ## v0.0.1 — 2026-05-06
 
 Initial release.

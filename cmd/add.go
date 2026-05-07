@@ -44,9 +44,7 @@ var addAliasCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println("Changes:")
 		showDiff("", newLine)
-		fmt.Println()
 
 		if dryRun {
 			fmt.Println("Dry run — no changes made.")

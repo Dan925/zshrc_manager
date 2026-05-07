@@ -2,7 +2,7 @@
 
 ![demo](demo.gif)
 
-A Go CLI tool for managing your `.zshrc` file — list aliases, search, add, remove, and back up safely.
+A Go CLI tool for managing your `.zshrc` file — list aliases, env vars, and functions; search, add, remove, and back up safely.
 
 Built as a Go learning project.
 
@@ -98,6 +98,15 @@ zshrc backup restore 2026-05-05_14-32-01
 
 Backups are stored in `~/.zshrc.bak/`. Every write operation creates one automatically before touching your file.
 
+### Env vars
+
+```bash
+zshrc env list                      # EDITOR -> nvim
+zshrc env add EDITOR=nvim           # add or overwrite, diff + confirm
+zshrc env remove EDITOR             # diff + confirm
+zshrc env add EDITOR=nvim --dry-run
+```
+
 ### Validate
 
 ```bash
@@ -129,6 +138,7 @@ zshrc --file ~/dotfiles/.zshrc list aliases
 │   ├── search.go
 │   ├── add.go
 │   ├── remove.go
+│   ├── env.go
 │   ├── backup.go
 │   ├── validate.go
 │   └── helpers.go    # confirm(), showDiff()

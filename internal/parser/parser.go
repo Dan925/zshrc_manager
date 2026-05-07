@@ -113,16 +113,21 @@ func (p *Parser) Parse() (*ZshrcFile, error) {
 	return zf, nil
 }
 
-func (zf *ZshrcFile) AddEnvVar(name, value string) {
+func (zf *ZshrcFile) AddEnvVar(name, value string, force bool) error{
 	newRawLine := fmt.Sprintf("export %s=%s", name, value)
 	for _, v:= range zf.EnvVars {
 		if v.Name == name {
-			zf.RawLines[v.Line-1] = newRawLine //overwrite line if env variable exists
-			return
+			if force {
+				zf.RawLines[v.Line-1] = newRawLine //overwrite line if env variable exists
+				return nil
+			} else {
+				return fmt.Errorf("Env variable %q already exist, use the --force flag to overwrite", name)
+			}
 		}
 	}
 
 	zf.RawLines = append(zf.RawLines,newRawLine)
+	return nil
 }
 
 func (zf *ZshrcFile) RemoveEnvVar(name string) error {
